@@ -2,6 +2,7 @@ package header2cookie
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 )
 
@@ -24,6 +25,7 @@ type CookieManager struct {
 }
 
 func (c *CookieManager) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	fmt.Printf("header2cookie receive request, cookie: %v, len: %v\n", c.Config.Cookie, len(c.Config.Cookie))
 	// 把header中的一些值设置到cookie里面
 	for _, key := range c.Config.Cookie {
 		if value := req.Header.Get(key); value != "" {
@@ -33,8 +35,16 @@ func (c *CookieManager) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				Path:     "/",
 				HttpOnly: true,
 			})
+			// 手动将新设置的 Cookie 添加到请求中
+			req.AddCookie(&http.Cookie{
+				Name:     key,
+				Value:    value,
+				Path:     "/",
+				HttpOnly: true,
+			})
 		}
 	}
+	fmt.Printf("request cookie: %v\n", req.Cookies())
 	// 继续处理下一个 Handler
 	c.next.ServeHTTP(rw, req)
 }
