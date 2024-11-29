@@ -1,0 +1,7 @@
+displayName: Header2Cookie
+type: middleware
+import: github.com/nullxjx/header2cookie
+summary: |
+  Add cookies from header.
+testData:
+  cookie: ["USER_ID", "REQUEST_ID"]
