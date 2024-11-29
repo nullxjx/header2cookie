@@ -1,0 +1,34 @@
+services:
+
+  traefik:
+    image: traefik:v3.2
+    container_name: "traefik"
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--experimental.localPlugins.header2cookie.moduleName=github.com/nullxjx/header2cookie"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "../:/plugins-local/src/github.com/nullxjx/header2cookie:ro"
+
+  whoami:
+    image: traefik/whoami
+    deploy:
+      replicas: 2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=PathPrefix(`/whoami`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"
+      - "traefik.http.services.whoami.loadbalancer.sticky=true" # 启用会话保持功能
+      - "traefik.http.services.whoami.loadbalancer.sticky.cookie.name=whoami_session" # 设置会话保持的 Cookie 名称
+      - "traefik.http.services.whoami.loadbalancer.sticky.cookie.httpOnly=true" # 设置 Cookie 为 HttpOnly，防止客户端脚本访问
+      - "traefik.http.services.whoami.loadbalancer.sticky.cookie.secure=false" # 设置 Cookie 为不安全（仅在 HTTP 上使用）
+      - "traefik.http.middlewares.header2cookie.plugin.header2cookie.cookie=X-Custom-Header,UserId" # 配置插件的参数
+      - "traefik.http.routers.whoami.middlewares=header2cookie@docker" # 将插件应用到路由
